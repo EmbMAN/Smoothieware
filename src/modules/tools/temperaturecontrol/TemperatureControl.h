@@ -53,6 +53,7 @@ class TemperatureControl : public Module {
 
         float future_temp;
         float delta;
+        float deadtime;
 
         int o;
 

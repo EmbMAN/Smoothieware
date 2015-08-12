@@ -1,7 +1,10 @@
 #include "libs/Kernel.h"
+#include "Stepper.h"
+#include "utils/Gcode.h"
 #include "PauseButton.h"
 #include "libs/nuts_bolts.h"
 #include "libs/utils.h"
+#include "libs/Pin.h"
 #include "Config.h"
 #include "SlowTicker.h"
 #include "libs/SerialMessage.h"
@@ -10,6 +13,8 @@
 #include "checksumm.h"
 #include "ConfigValue.h"
 #include "StreamOutputPool.h"
+
+#include "InterruptIn.h" // mbed
 
 using namespace std;
 
@@ -32,6 +37,7 @@ void PauseButton::on_module_loaded()
     this->pause_button.from_string( THEKERNEL->config->value( pause_button_pin_checksum )->by_default("2.12")->as_string())->as_input();
     this->kill_button.from_string( THEKERNEL->config->value( kill_button_pin_checksum )->by_default("nc")->as_string())->as_input();
 
+
     if(this->kill_enable && this->kill_button.connected() && pause_button.equals(kill_button)) {
         // kill button takes priority
         this->pause_enable = false;
@@ -41,10 +47,22 @@ void PauseButton::on_module_loaded()
         this->kill_button = this->pause_button;
     }
 
+    if (this->kill_enable)
+	{
+       this->emergencyOut.from_string("3.26o");
+
+        this->_emergencyIn = this->kill_button.interrupt_pin();
+
+        // set interrupt on rising edge
+        this->_emergencyIn->rise(this, &PauseButton::on_kill_interrupt);
+        
+        this->_emergencyIn->mode(PullDown);  // PullNone
+	}
+
     this->register_for_event(ON_CONSOLE_LINE_RECEIVED);
 
     if( (this->pause_enable && this->pause_button.connected()) || (this->kill_enable && this->kill_button.connected()) ) {
-        THEKERNEL->slow_ticker->attach( 10, this, &PauseButton::button_tick );
+        //THEKERNEL->slow_ticker->attach( 10, this, &PauseButton::button_tick );
         this->register_for_event(ON_IDLE);
     }
 }
@@ -52,10 +70,25 @@ void PauseButton::on_module_loaded()
 void PauseButton::on_idle(void *argument)
 {
     if(do_kill) {
+
         do_kill= false;
         THEKERNEL->call_event(ON_HALT, nullptr);
         THEKERNEL->streams->printf("Kill button pressed - reset or M999 to continue\r\n");
     }
+}
+
+void PauseButton::on_kill_interrupt()
+{
+  if ((!this->killed) && this->kill_button.get() )	{
+	// Disable Stepper
+	THEKERNEL->stepper->turn_enable_pins_off();
+
+	// Disable EO output pin
+	this->emergencyOut.set(false);
+	
+        this->killed = true;
+        this->do_kill= true;
+   }
 }
 
 //TODO: Make this use InterruptIn
@@ -83,6 +116,12 @@ uint32_t PauseButton::button_tick(uint32_t dummy)
         this->killed = true;
         // we can't call this in ISR, and we need to block on_main_loop so do it in on_idle
         // THEKERNEL->call_event(ON_HALT);
+
+	// Disable EO output pin
+	this->emergencyOut.set(false);
+	
+	// Disable Stepper
+
         this->do_kill= true;
     }
 
