@@ -28,7 +28,7 @@
 #define panel_checksum             CHECKSUM("panel")
 
 // goes in Flash, list of Mxxx codes that are allowed when in Halted state
-static const int allowed_mcodes[]= {105,114}; // get temp, get pos
+static const int allowed_mcodes[]= {105,114,80,81}; // get temp, get pos, release EO
 static bool is_allowed_mcode(int m) {
     for (size_t i = 0; i < sizeof(allowed_mcodes)/sizeof(int); ++i) {
         if(allowed_mcodes[i] == m) return true;
