@@ -197,6 +197,9 @@ void TemperatureControl::load_config()
     this->iTerm = 0.0;
     this->lastInput = -1.0;
     this->last_reading = 0.0;
+
+    this->delta = 0.0;
+    this->future_temp = 0.0;
 }
 
 void TemperatureControl::on_gcode_received(void *argument)
@@ -206,7 +209,7 @@ void TemperatureControl::on_gcode_received(void *argument)
 
         if( gcode->m == this->get_m_code ) {
             char buf[32]; // should be big enough for any status
-            int n = snprintf(buf, sizeof(buf), "%s:%3.1f /%3.1f @%d ", this->designator.c_str(), this->get_temperature(), ((target_temperature == UNDEFINED) ? 0.0 : target_temperature), this->o);
+            int n = snprintf(buf, sizeof(buf), "%s:%3.1f /%3.1f /%3.1f @%d ", this->designator.c_str(), this->get_temperature(), this->future_temp, ((target_temperature == UNDEFINED) ? 0.0 : target_temperature), this->o);
             gcode->txt_after_ok.append(buf, n);
             gcode->mark_as_taken();
             return;
@@ -453,15 +456,22 @@ void TemperatureControl::pid_process(float temperature)
         return;
     }
 
+    float d = (temperature - this->lastInput);
+    this->delta = (this->delta * 3 + d) / 4;
+
+    float t_new = temperature + (this->delta *  (7 * this->readings_per_second));
+
+    this->future_temp = t_new;
+
     // regular PID control
-    float error = target_temperature - temperature;
+    float error = target_temperature - t_new;
 
     float new_I = this->iTerm + (error * this->i_factor);
     if (new_I > this->i_max) new_I = this->i_max;
     else if (new_I < 0.0) new_I = 0.0;
     if(!this->windup) this->iTerm= new_I;
 
-    float d = (temperature - this->lastInput);
+
 
     // calculate the PID output
     // TODO does this need to be scaled by max_pwm/256? I think not as p_factor already does that
@@ -481,7 +491,7 @@ void TemperatureControl::pid_process(float temperature)
 void TemperatureControl::on_second_tick(void *argument)
 {
     if (waiting)
-        THEKERNEL->streams->printf("%s:%3.1f /%3.1f @%d\n", designator.c_str(), get_temperature(), ((target_temperature == UNDEFINED) ? 0.0 : target_temperature), o);
+        THEKERNEL->streams->printf("%s:%3.1f /%3.1f /%3.1f @%d\n", designator.c_str(), get_temperature(), this->future_temp, ((target_temperature == UNDEFINED) ? 0.0 : target_temperature), o);
 }
 
 void TemperatureControl::setPIDp(float p)
