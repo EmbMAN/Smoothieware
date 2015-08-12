@@ -1632,6 +1632,12 @@ tcp_send_finack:
                 uip_add_rcv_nxt(uip_len);
             }
 
+
+            /* Windows Zero Window Probe */
+            if ((uip_connr->tcpstateflags & UIP_STOPPED) != 0) {
+            	goto tcp_send_ack;
+            }
+
             /* Check if the available buffer space advertised by the other end
                is smaller than the initial MSS for this connection. If so, we
                set the current MSS to the window size to ensure that the
