@@ -139,7 +139,7 @@ bool ZProbe::wait_for_probe(int& steps)
         }
 
         // if the touchprobe is active...
-        if( this->pin.get() ) {
+        if( this->pin.get() && (this->acdc==false)) {
             //...increase debounce counter...
             if( debounce < debounce_count) {
                 // ...but only if the counter hasn't reached the max. value
@@ -179,6 +179,11 @@ bool ZProbe::run_probe(int& steps, bool fast)
     this->current_feedrate = (fast ? this->fast_feedrate : this->slow_feedrate) * Z_STEPS_PER_MM; // steps/sec
     float maxz= this->max_z*2;
 
+    for (int i=0; i<1000; i++) {
+        THEKERNEL->call_event(ON_IDLE);
+    }
+
+
     // move Z down
     STEPPER[Z_AXIS]->move(true, maxz * Z_STEPS_PER_MM, 0); // always probes down, no more than 2*maxz
     if(this->is_delta) {
@@ -188,8 +193,9 @@ bool ZProbe::run_probe(int& steps, bool fast)
     }
 
     // start acceleration processing
+    this->acdc = true;
     this->running = true;
-
+  
     bool r = wait_for_probe(steps);
     this->running = false;
     return r;
@@ -336,6 +342,9 @@ void ZProbe::accelerate(int c)
     if( current_rate > target_rate ) {
         current_rate = target_rate;
     }
+
+    if ( current_rate == target_rate)
+	this->acdc = false;
 
     // steps per second
     STEPPER[c]->set_speed(current_rate);

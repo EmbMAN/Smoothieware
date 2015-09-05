@@ -56,6 +56,7 @@ private:
     float max_z;
     volatile struct {
         volatile bool running:1;
+	volatile bool acdc:1;
         bool is_delta:1;
     };
 
