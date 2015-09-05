@@ -32,6 +32,7 @@ Author: Michael Hackney, mhackney@eclecticangler.com
 #define enable_checksum                               CHECKSUM("enable")
 #define temperatureswitch_hotend_checksum             CHECKSUM("hotend")
 #define temperatureswitch_threshold_temp_checksum     CHECKSUM("threshold_temp")
+#define temperatureswitch_threshold_temp_off_checksum     CHECKSUM("threshold_temp_off")
 #define temperatureswitch_type_checksum               CHECKSUM("type")
 #define temperatureswitch_switch_checksum             CHECKSUM("switch")
 #define temperatureswitch_heatup_poll_checksum        CHECKSUM("heatup_poll")
@@ -118,6 +119,7 @@ bool TemperatureSwitch::load_config(uint16_t modcs)
     ts->temperatureswitch_switch_cs= get_checksum(s); // checksum of the switch to use
 
     ts->temperatureswitch_threshold_temp = THEKERNEL->config->value(temperatureswitch_checksum, modcs, temperatureswitch_threshold_temp_checksum)->by_default(50.0f)->as_number();
+    ts->temperatureswitch_threshold_temp_off = THEKERNEL->config->value(temperatureswitch_checksum, modcs, temperatureswitch_threshold_temp_off_checksum)->by_default(50.0f)->as_number();
 
     // these are to tune the heatup and cooldown polling frequencies
     ts->temperatureswitch_heatup_poll = THEKERNEL->config->value(temperatureswitch_checksum, modcs, temperatureswitch_heatup_poll_checksum)->by_default(15)->as_number();
@@ -146,7 +148,7 @@ void TemperatureSwitch::on_second_tick(void *argument)
                 set_switch(true);
                 current_delay = temperatureswitch_cooldown_poll;
             }
-        } else {
+        } else if (current_temp < this->temperatureswitch_threshold_temp_off){
             // temp < threshold temp, turn the cooler switch off if it isn't already
             if (temperatureswitch_state) {
                 set_switch(false);

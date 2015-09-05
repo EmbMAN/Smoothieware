@@ -43,6 +43,7 @@ class TemperatureSwitch : public Module
 
         // temperatureswitch.hotend.threshold_temp
         float temperatureswitch_threshold_temp;
+        float temperatureswitch_threshold_temp_off;
 
         // temperatureswitch.hotend.switch
         uint16_t temperatureswitch_switch_cs;
