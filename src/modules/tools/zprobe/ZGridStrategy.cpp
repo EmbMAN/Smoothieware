@@ -488,9 +488,9 @@ bool ZGridStrategy::doProbing(StreamOutput *stream)  // probed calibration
 
     if (this->wait_for_probe){
 
-        this->cal[X_AXIS] = this->bed_x/2.0f;
-        this->cal[Y_AXIS] = this->bed_y/2.0f;
-        this->cal[Z_AXIS] = this->bed_z/2.0f;           // Position head for probe attachment
+        this->cal[X_AXIS] = 50.0f;
+        this->cal[Y_AXIS] = 50.0f;
+        this->cal[Z_AXIS] = std::get<Z_AXIS>(this->probe_offsets) + zprobe->getProbeHeight();           // Position head for probe attachment
         this->move(this->cal, slow_rate);               // Move to probe attachment point
 
         stream->printf("*** Ensure probe is attached and press probe when done ***\n");
@@ -506,7 +506,7 @@ bool ZGridStrategy::doProbing(StreamOutput *stream)  // probed calibration
     this->cal[Y_AXIS] = 0.0f;
     this->cal[Z_AXIS] = std::get<Z_AXIS>(this->probe_offsets) + zprobe->getProbeHeight();
 
-    this->move(this->cal, slow_rate);            // Move to probe start point
+    //this->move(this->cal, slow_rate);            // Move to probe start point
 
     for (int probes = 0; probes < probe_points; probes++){
         int pindex = 0;
@@ -524,7 +524,7 @@ bool ZGridStrategy::doProbing(StreamOutput *stream)  // probed calibration
         } else {
             this->next_cal();                                     // to not cause damage to machine due to Z-offset
         }
-        this->move(this->cal, slow_rate);                         // move to the next position
+        //this->move(this->cal, slow_rate);                         // move to the next position
 
         this->pData[pindex] = z ;                                 // save the offset
     }
@@ -559,7 +559,7 @@ void ZGridStrategy::normalize_grid()
         this->pData[i] += norm_offset;
 
    // add the offset to the current Z homing offset to preserve full probed offset.
-   this->setZoffset(getZhomeoffset() + norm_offset);
+   //this->setZoffset(getZhomeoffset() + norm_offset);
 }
 
 void ZGridStrategy::homexyz()
