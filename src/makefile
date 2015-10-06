@@ -29,13 +29,13 @@ ENABLE_DEBUG_MONITOR?=0
 
 # this is the default UART baud rate used if it is not set in config
 # it is also the baud rate used to report any errors found while parsing the config file
-DEFAULT_SERIAL_BAUD_RATE?=9600
+DEFAULT_SERIAL_BAUD_RATE?=115200
 
 ifeq "$(ENABLE_DEBUG_MONITOR)" "1"
 # Can add MRI_UART_BAUD=115200 to next line if GDB fails to connect to MRI.
 # Tends to happen on some Linux distros but not Windows and OS X.
 MRI_UART=MRI_UART_0
-MRI_BREAK_ON_INIT=1
+MRI_BREAK_ON_INIT=0
 MRI_SEMIHOST_STDIO=1
 else
 MRI_UART=MRI_UART_0 MRI_UART_SHARE
@@ -59,7 +59,7 @@ DEFINES += -DSTEPTICKER_DEBUG_PIN=$(STEPTICKER_DEBUG_PIN)
 endif
 
 # add any modules that you do not want included in the build
-EXCLUDE_MODULES = tools/touchprobe
+EXCLUDE_MODULES = tools/touchprobe tools/laser tools/scaracal tools/spindle tools/drillingcycles utils/panel
 # e.g for a CNC machine
 #export EXCLUDED_MODULES = tools/touchprobe tools/laser tools/temperaturecontrol tools/extruder
 
@@ -76,7 +76,7 @@ endif
 include $(BUILD_DIR)/build.mk
 
 CONSOLE?=/dev/arduino
-BAUD?=1000000
+BAUD?=19200
 
 .PHONY: debug-store flash upload debug console dfu
 
@@ -93,7 +93,7 @@ upload: ../LPC1768/$(PROJECT).bin debug-store
 	dfu-util -R -d 1d50:6015 -D $<
 
 debug: ../LPC1768/$(PROJECT)_lastupload.elf
-	arm-none-eabi-gdb $< -ex  "set target-charset ASCII" -ex "set remotelogfile mri.log" -ex "target remote $(CONSOLE)"
+	arm-none-eabi-gdb $< --baud 9600 -ex  "set target-charset ASCII" -ex "set remotelogfile mri.log"  -ex "target remote com8"
 
 console:
 	stty raw ignbrk -echo $(BAUD) < $(CONSOLE)
