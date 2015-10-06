@@ -49,6 +49,8 @@ using std::string;
 #define  y_axis_max_speed_checksum           CHECKSUM("y_axis_max_speed")
 #define  z_axis_max_speed_checksum           CHECKSUM("z_axis_max_speed")
 
+#define  default_minimum_rate       CHECKSUM("default_minimum_actuator_rate")
+
 // arm solutions
 #define  arm_solution_checksum               CHECKSUM("arm_solution")
 #define  cartesian_checksum                  CHECKSUM("cartesian")
@@ -189,6 +191,8 @@ void Robot::on_config_reload(void *argument)
     this->delta_segments_per_second = THEKERNEL->config->value(delta_segments_per_second_checksum )->by_default(0.0f   )->as_number();
     this->mm_per_arc_segment  = THEKERNEL->config->value(mm_per_arc_segment_checksum  )->by_default(    0.5f)->as_number();
     this->arc_correction      = THEKERNEL->config->value(arc_correction_checksum      )->by_default(    5   )->as_number();
+
+    StepperMotor::default_minimum_actuator_rate = THEKERNEL->config->value(default_minimum_rate      )->by_default(  1200.0f)->as_number()/60.0f;
 
     this->max_speeds[X_AXIS]  = THEKERNEL->config->value(x_axis_max_speed_checksum    )->by_default(60000.0F)->as_number() / 60.0F;
     this->max_speeds[Y_AXIS]  = THEKERNEL->config->value(y_axis_max_speed_checksum    )->by_default(60000.0F)->as_number() / 60.0F;
