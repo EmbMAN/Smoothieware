@@ -104,7 +104,8 @@ void Extruder::on_halt(void *arg)
 {
     if(arg == nullptr) {
         // turn off motor
-        this->en_pin.set(1);
+        //this->en_pin.set(1);
+    	stepper_motor->enable(false);
     }
 }
 
